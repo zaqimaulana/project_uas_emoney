@@ -50,6 +50,13 @@
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <!-- Izinkan callback ke merchant app (contoh: beerstore://payment-result) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="beerstore"/>
+        </intent>
+    </queries>
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
