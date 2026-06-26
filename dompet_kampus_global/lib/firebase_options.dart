@@ -6,7 +6,13 @@ import 'package:flutter/foundation.dart'
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
-/// Example:
+/// Project: e-money-b97f9
+/// Sender:  714010609004
+///
+/// CATATAN: appId Android/iOS harus diambil dari google-services.json
+/// yang diunduh dari Firebase Console setelah mendaftarkan app.
+/// Jalankan `flutterfire configure` untuk menghasilkan file ini secara otomatis.
+///
 /// ```dart
 /// import 'firebase_options.dart';
 /// // ...
@@ -17,10 +23,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -29,18 +32,15 @@ class DefaultFirebaseOptions {
         return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for macos.',
         );
       case TargetPlatform.windows:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for windows.',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for linux.',
         );
       default:
         throw UnsupportedError(
@@ -49,20 +49,32 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCWAzGMTyg1uSspi1qfno71sj4iCfp7qGk',
-    appId: '1:948878883710:android:516b94bdc2276b68a0512f',
-    messagingSenderId: '948878883710',
-    projectId: 'fir-emoney-e9256',
-    storageBucket: 'fir-emoney-e9256.firebasestorage.app',
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCRsMFg2QVCMv5rw-aNCrJ6HkKmZrkdMaA',
+    appId: '1:714010609004:web:7e48d3cc934fb0d1271f49',
+    messagingSenderId: '714010609004',
+    projectId: 'e-money-b97f9',
+    authDomain: 'e-money-b97f9.firebaseapp.com',
+    storageBucket: 'e-money-b97f9.firebasestorage.app',
+    measurementId: 'G-S5XQK0P3JZ',
   );
 
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyA0q7qoZy0EEtbD5MKucQqgaOpIhJBW4Rg',
+    appId: '1:714010609004:android:075cacdcd5cc0aba271f49',
+    messagingSenderId: '714010609004',
+    projectId: 'e-money-b97f9',
+    storageBucket: 'e-money-b97f9.firebasestorage.app',
+  );
+
+  // Nilai ios appId di bawah ini harus diganti dengan nilai dari
+  // GoogleService-Info.plist (unduh dari Firebase Console → Project Settings → iOS).
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA46uBUvmVQKsSL7HIXZG58MD9jXQCFX7c',
-    appId: '1:948878883710:ios:5363ad2b9fbe06b2a0512f',
-    messagingSenderId: '948878883710',
-    projectId: 'fir-emoney-e9256',
-    storageBucket: 'fir-emoney-e9256.firebasestorage.app',
+    apiKey: 'AIzaSyCRsMFg2QVCMv5rw-aNCrJ6HkKmZrkdMaA',
+    appId: '1:714010609004:ios:7e48d3cc934fb0d1271f49',
+    messagingSenderId: '714010609004',
+    projectId: 'e-money-b97f9',
+    storageBucket: 'e-money-b97f9.firebasestorage.app',
     iosBundleId: 'com.kampus.dompetKampusGlobal',
   );
 }
