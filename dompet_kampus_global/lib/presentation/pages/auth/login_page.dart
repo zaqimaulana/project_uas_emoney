@@ -97,7 +97,19 @@ class _LoginPageState extends State<LoginPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthNeedsVerification) {
-          context.go('/2fa/smtp');
+          final method = state.user.twoFaMethod;
+          switch (method) {
+            case 'totp':
+              context.go('/2fa/totp');
+            case 'notif':
+              context.go('/2fa/notif');
+            case null:
+              // Pengguna baru: belum mengatur 2FA — arahkan ke halaman setup
+              context.go('/setup-2fa');
+            default:
+              // 'smtp' atau fallback
+              context.go('/2fa/smtp');
+          }
         } else if (state is AuthAuthenticated) {
           context.go('/home');
         } else if (state is AuthError) {
