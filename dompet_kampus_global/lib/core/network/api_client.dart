@@ -110,17 +110,17 @@ class ApiClient {
         final errorCode = data['error_code'] as String?;
         final status = e.response!.statusCode;
 
+        if (errorCode == 'INSUFFICIENT_BALANCE') {
+          final d = data['data'] as Map<String, dynamic>?;
+          return InsufficientBalanceException(
+            message,
+            balance: (d?['balance'] as num?)?.toDouble(),
+            amount: (d?['amount'] as num?)?.toDouble(),
+          );
+        }
         if (status == 401) {
           if (errorCode == 'INVALID_OTP' || errorCode == 'INVALID_TOTP') {
             return InvalidOtpException(message);
-          }
-          if (errorCode == 'INSUFFICIENT_BALANCE') {
-            final d = data['data'] as Map<String, dynamic>?;
-            return InsufficientBalanceException(
-              message,
-              balance: (d?['balance'] as num?)?.toDouble(),
-              amount: (d?['amount'] as num?)?.toDouble(),
-            );
           }
           return UnauthorizedException(message, errorCode: errorCode);
         }
