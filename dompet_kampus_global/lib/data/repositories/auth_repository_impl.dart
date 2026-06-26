@@ -19,6 +19,8 @@ class AuthRepositoryImpl implements AuthRepository {
       await _local.saveToken(result.token);
       await _local.saveUserJson(result.user.toJsonString());
       await _local.saveAuthVerified(false);
+      final method = result.user.twoFaMethod;
+      if (method != null) await _local.save2faMethod(method);
       return (user: result.user, token: result.token);
     } on UnauthorizedException catch (e) {
       throw AuthFailure(e.message, errorCode: e.errorCode);
@@ -36,6 +38,8 @@ class AuthRepositoryImpl implements AuthRepository {
       await _local.saveToken(result.token);
       await _local.saveUserJson(result.user.toJsonString());
       await _local.saveAuthVerified(false);
+      final method = result.user.twoFaMethod;
+      if (method != null) await _local.save2faMethod(method);
       return (user: result.user, token: result.token);
     } on UnauthorizedException catch (e) {
       throw AuthFailure(e.message, errorCode: e.errorCode);
