@@ -3,35 +3,16 @@ version: '3.8'
 services:
   app:
     build: .
-    ports:
-      - "8080:8080"
+    network_mode: host
     env_file: .env
     volumes:
       - ./firebase_service_account.json:/app/firebase_service_account.json:ro
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    restart: unless-stopped
-
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - redis
     restart: unless-stopped
 
   redis:
     image: redis:alpine
+    ports:
+      - "6379:6379"
     restart: unless-stopped
-
-volumes:
-  mysql_data:
