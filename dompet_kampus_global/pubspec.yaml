@@ -38,6 +38,12 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   shared_preferences: ^2.3.4
 
+  # Biometric
+  local_auth: ^2.3.0
+
+  # Notifications
+  flutter_local_notifications: ^18.0.0
+
   # QR / Camera
   mobile_scanner: ^7.2.0
 
