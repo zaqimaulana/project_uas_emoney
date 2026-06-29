@@ -181,7 +181,7 @@ class MerchantCheckoutPage extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Dompet Kampus Global',
+                              Text('daqi',
                                   style: TextStyle(
                                     fontFamily: 'PlusJakartaSans',
                                     fontSize: 14.5,

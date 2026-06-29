@@ -65,6 +65,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null && mounted) {
+        debugPrint('FCM TOKEN: $token');
         context.read<AuthBloc>().add(AuthUpdateFcmToken(token));
       }
     } catch (_) {}
@@ -227,7 +228,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 children: [
                   const AppLogo(size: 26),
                   const SizedBox(width: 7),
-                  const Text('Saldo DKG',
+                  const Text('Saldo daqi',
                       style: TextStyle(
                         fontFamily: 'PlusJakartaSans',
                         fontSize: 13,
@@ -502,7 +503,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                             color: Colors.white,
                           )),
                       SizedBox(height: 2),
-                      Text('Simulasi checkout e-commerce → bayar via DKG',
+                      Text('Simulasi checkout e-commerce → bayar via daqi',
                           style: TextStyle(
                             fontFamily: 'PlusJakartaSans',
                             fontSize: 12.5,

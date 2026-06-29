@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/biometric_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../widgets/app_avatar.dart';
@@ -194,7 +195,7 @@ class AccountPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       const Center(
-                        child: Text('Dompet Kampus Global · v1.0.0',
+                        child: Text('daqi · Dana Zaqi · v1.0.0',
                             style: TextStyle(
                               fontFamily: 'PlusJakartaSans',
                               fontSize: 12,
@@ -233,41 +234,49 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            FeatureIcon(icon: icon, tone: tone, size: 42, iconSize: 20),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          // Bagian kiri yang bisa di-tap (ikon + teks)
+          Expanded(
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                        fontFamily: 'PlusJakartaSans',
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
-                      )),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(subtitle!,
-                        style: const TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 12.5,
-                          color: AppColors.slate400,
-                        )),
-                  ],
+                  FeatureIcon(icon: icon, tone: tone, size: 42, iconSize: 20),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: const TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            )),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 2),
+                          Text(subtitle!,
+                              style: const TextStyle(
+                                fontFamily: 'PlusJakartaSans',
+                                fontSize: 12.5,
+                                color: AppColors.slate400,
+                              )),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-            right ?? const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.slate400),
-          ],
-        ),
+          ),
+          // Widget kanan (toggle / chevron) di luar GestureDetector row
+          right ?? const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.slate400),
+        ],
       ),
     );
   }
@@ -279,11 +288,44 @@ class _Toggle extends StatefulWidget {
 }
 
 class _ToggleState extends State<_Toggle> {
-  bool _on = true;
+  final _biometric = BiometricService();
+  bool _on = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _biometric.isEnabled().then((v) {
+      if (mounted) setState(() => _on = v);
+    });
+  }
+
+  Future<void> _toggle() async {
+    final available = await _biometric.isAvailable();
+    if (!available && !_on) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perangkat tidak mendukung biometrik')),
+        );
+      }
+      return;
+    }
+
+    if (!_on) {
+      // Aktifkan: minta verifikasi biometrik dulu
+      final passed = await _biometric.authenticate(
+        reason: 'Verifikasi untuk mengaktifkan login biometrik',
+      );
+      if (!passed) return;
+    }
+
+    await _biometric.setEnabled(!_on);
+    if (mounted) setState(() => _on = !_on);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => setState(() => _on = !_on),
+      onTap: _toggle,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         width: 44,

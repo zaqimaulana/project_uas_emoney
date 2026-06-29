@@ -44,7 +44,7 @@ class _TransferPageState extends State<TransferPage> {
             child: Column(
               children: [
                 Row(
-                  children: [['dkg', 'Sesama DKG'], ['bank', 'Ke Bank']].map((t) {
+                  children: [['dkg', 'Sesama daqi'], ['bank', 'Ke Bank']].map((t) {
                     final active = _tab == t[0];
                     return Expanded(
                       child: GestureDetector(

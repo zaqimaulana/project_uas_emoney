@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/biometric_service.dart';
 import '../../../core/services/deeplink_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -15,10 +16,40 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  final _biometric = BiometricService();
+  bool _biometricHandled = false;
+
   @override
   void initState() {
     super.initState();
     context.read<AuthBloc>().add(AuthCheckRequested());
+  }
+
+  Future<void> _handleBiometricThenNavigate() async {
+    if (_biometricHandled) return;
+    _biometricHandled = true;
+
+    final enabled = await _biometric.isEnabled();
+    final available = await _biometric.isAvailable();
+
+    if (enabled && available) {
+      final passed = await _biometric.authenticate(
+        reason: 'Masuk ke daqi',
+      );
+      if (!mounted) return;
+      if (!passed) {
+        context.read<AuthBloc>().add(AuthLogoutRequested());
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    final pending = DeeplinkService.consumePending();
+    if (pending != null) {
+      context.go('/pay', extra: pending);
+    } else {
+      context.go('/home');
+    }
   }
 
   @override
@@ -26,14 +57,7 @@ class _SplashPageState extends State<SplashPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          // Cek apakah ada deeplink payment yang menunggu (cold-start via deeplink).
-          // Jika ada, langsung ke halaman konfirmasi. Jika tidak, ke home.
-          final pending = DeeplinkService.consumePending();
-          if (pending != null) {
-            context.go('/pay', extra: pending);
-          } else {
-            context.go('/home');
-          }
+          _handleBiometricThenNavigate();
         } else if (state is AuthUnauthenticated) {
           // Stay on splash to show welcome
         }
@@ -78,29 +102,29 @@ class _SplashPageState extends State<SplashPage> {
                       const AppLogo(size: 92, light: true),
                       const SizedBox(height: 26),
                       const Text(
-                        'Dompet Kampus',
+                        'DaQi',
                         style: TextStyle(
                           fontFamily: 'PlusJakartaSans',
-                          fontSize: 30,
+                          fontSize: 38,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
-                          letterSpacing: -0.5,
+                          letterSpacing: -1,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       const Text(
-                        'GLOBAL',
+                        'Dana Zaqi',
                         style: TextStyle(
                           fontFamily: 'PlusJakartaSans',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 3,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                          letterSpacing: 1,
                         ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Bayar, transfer, dan kelola uang kuliah\ndalam satu aplikasi yang aman.',
+                        'Bayar, transfer, dan kelola keuangan\ndalam satu aplikasi yang aman.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'PlusJakartaSans',
