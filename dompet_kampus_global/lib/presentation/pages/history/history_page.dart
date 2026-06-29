@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
@@ -11,13 +14,32 @@ class HistoryPage extends StatefulWidget {
   State<HistoryPage> createState() => _HistoryPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage> {
+class _HistoryPageState extends State<HistoryPage> with WidgetsBindingObserver {
   String _tab = 'all';
+  StreamSubscription<RemoteMessage>? _fcmSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     context.read<AccountBloc>().add(AccountLoadRequested());
+    _fcmSub = FirebaseMessaging.onMessage.listen((_) {
+      if (mounted) context.read<AccountBloc>().add(AccountRefreshRequested());
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _fcmSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<AccountBloc>().add(AccountRefreshRequested());
+    }
   }
 
   @override
@@ -72,13 +94,22 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
           Expanded(
-            child: BlocBuilder<AccountBloc, AccountState>(
+            child: RefreshIndicator(
+              onRefresh: () async =>
+                  context.read<AccountBloc>().add(AccountRefreshRequested()),
+              color: AppColors.primary,
+              child: BlocBuilder<AccountBloc, AccountState>(
               builder: (context, state) {
                 if (state is AccountLoading) {
                   return const Center(child: CircularProgressIndicator(color: AppColors.primary));
                 }
                 if (state is AccountError) {
-                  return Center(child: Text(state.message, style: const TextStyle(color: AppColors.slate400)));
+                  return ListView(children: [
+                    Center(child: Padding(
+                      padding: const EdgeInsets.all(40),
+                      child: Text(state.message, style: const TextStyle(color: AppColors.slate400)),
+                    )),
+                  ]);
                 }
                 if (state is AccountLoaded) {
                   List<TransactionEntity> txns = state.transactions;
@@ -132,6 +163,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 }
                 return const SizedBox.shrink();
               },
+            ),
             ),
           ),
         ],

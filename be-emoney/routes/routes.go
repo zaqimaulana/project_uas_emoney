@@ -21,9 +21,11 @@ func Setup(db *gorm.DB, rdb *redis.Client, firebaseApp *firebase.App, cfg *confi
 	emailSvc := services.NewEmailService(cfg)
 	otpSvc := services.NewOTPService(db, rdb, firebaseApp, cfg, emailSvc)
 
+	fcmSvc := services.NewFCMService(firebaseApp)
+
 	authHandler := handlers.NewAuthHandler(db, firebaseApp, jwtSvc, otpSvc, cfg)
 	otpHandler := handlers.NewOTPHandler(db, otpSvc)
-	paymentHandler := handlers.NewPaymentHandler(db, otpSvc)
+	paymentHandler := handlers.NewPaymentHandler(db, otpSvc, fcmSvc)
 
 	v1 := r.Group("/v1")
 	{

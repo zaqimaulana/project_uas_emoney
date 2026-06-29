@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -18,14 +21,53 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _hideBalance = false;
+  StreamSubscription<RemoteMessage>? _fcmSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     context.read<AccountBloc>().add(AccountLoadRequested());
     context.read<AuthBloc>().add(AuthCheckRequested());
+    _registerFcmToken();
+    _fcmSub = FirebaseMessaging.onMessage.listen(_onFcmMessage);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _fcmSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<AccountBloc>().add(AccountRefreshRequested());
+    }
+  }
+
+  void _onFcmMessage(RemoteMessage message) {
+    context.read<AccountBloc>().add(AccountRefreshRequested());
+    final notif = message.notification;
+    if (notif != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(notif.body ?? 'Transaksi berhasil'),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
+  Future<void> _registerFcmToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && mounted) {
+        context.read<AuthBloc>().add(AuthUpdateFcmToken(token));
+      }
+    } catch (_) {}
   }
 
   @override

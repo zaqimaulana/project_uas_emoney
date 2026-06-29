@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +9,11 @@ import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
 import 'firebase_options.dart';
 import 'injection/injection_container.dart' as di;
+
+@pragma('vm:entry-point')
+Future<void> _fcmBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+}
 
 // Top-level variable — mencegah DeeplinkService di-garbage collect selama
 // proses berjalan sehingga uriLinkStream tetap aktif untuk in-app deeplinks.
@@ -20,6 +26,10 @@ void main() async {
 
   // Initialize Firebase dengan opsi dari firebase_options.dart (project e-money-b97f9)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // FCM setup
+  FirebaseMessaging.onBackgroundMessage(_fcmBackgroundHandler);
+  await FirebaseMessaging.instance.requestPermission(alert: true, badge: true, sound: true);
 
   // Initialize dependency injection
   await di.init();

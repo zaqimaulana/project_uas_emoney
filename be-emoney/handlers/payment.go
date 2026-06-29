@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -14,10 +16,11 @@ import (
 type PaymentHandler struct {
 	db     *gorm.DB
 	otpSvc *services.OTPService
+	fcmSvc *services.FCMService
 }
 
-func NewPaymentHandler(db *gorm.DB, otpSvc *services.OTPService) *PaymentHandler {
-	return &PaymentHandler{db: db, otpSvc: otpSvc}
+func NewPaymentHandler(db *gorm.DB, otpSvc *services.OTPService, fcmSvc *services.FCMService) *PaymentHandler {
+	return &PaymentHandler{db: db, otpSvc: otpSvc, fcmSvc: fcmSvc}
 }
 
 type TransferRequest struct {
@@ -125,6 +128,17 @@ func (h *PaymentHandler) TopUp(c *gin.Context) {
 		})
 		return
 	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		var user models.User
+		if err := h.db.WithContext(ctx).First(&user, userID).Error; err == nil {
+			h.fcmSvc.Notify(ctx, user.FCMToken, "Top Up Berhasil",
+				fmt.Sprintf("Saldo Anda bertambah Rp %.0f", req.Amount),
+				map[string]string{"type": "transaction"})
+		}
+	}()
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -245,6 +259,17 @@ func (h *PaymentHandler) Transfer(c *gin.Context) {
 		})
 		return
 	}
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		var user models.User
+		if err := h.db.WithContext(ctx).First(&user, userID).Error; err == nil {
+			h.fcmSvc.Notify(ctx, user.FCMToken, "Transfer Berhasil",
+				fmt.Sprintf("Rp %.0f telah dikirim", req.Amount),
+				map[string]string{"type": "transaction"})
+		}
+	}()
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
