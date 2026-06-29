@@ -12,9 +12,9 @@ class AppTheme {
         seedColor: AppColors.primary,
         primary: AppColors.primary,
         onPrimary: Colors.white,
-        secondary: AppColors.green,
+        secondary: AppColors.cyan,
+        onSecondary: Colors.white,
         surface: AppColors.white,
-        background: AppColors.bg,
         error: AppColors.red,
       ),
       scaffoldBackgroundColor: AppColors.bg,
@@ -23,7 +23,7 @@ class AppTheme {
         elevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
-          statusBarIconBrightness: Brightness.dark,
+          statusBarIconBrightness: Brightness.light,
         ),
         iconTheme: IconThemeData(color: AppColors.ink),
         titleTextStyle: TextStyle(
