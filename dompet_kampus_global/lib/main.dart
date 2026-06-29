@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/router/app_router.dart';
+import 'core/services/notification_service.dart';
 import 'core/services/deeplink_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
@@ -31,6 +32,10 @@ void main() async {
   FirebaseMessaging.onBackgroundMessage(_fcmBackgroundHandler);
   await FirebaseMessaging.instance.requestPermission(alert: true, badge: true, sound: true);
 
+  // Notification channel (Android 8+)
+  await initNotificationService();
+  FirebaseMessaging.onMessage.listen(showLocalNotification);
+
   // Initialize dependency injection
   await di.init();
 
@@ -43,7 +48,7 @@ void main() async {
   // Status bar style
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
+    statusBarIconBrightness: Brightness.light,
   ));
 
   // Simpan instance agar tidak di-GC — stream subscription harus tetap hidup
@@ -60,7 +65,7 @@ class DompetKampusApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Dompet Kampus Global',
+      title: 'daqi',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       routerConfig: AppRouter.router,
