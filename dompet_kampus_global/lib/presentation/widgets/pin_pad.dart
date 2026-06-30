@@ -6,6 +6,7 @@ class PinPad extends StatelessWidget {
   final int length;
   final ValueChanged<String> onChanged;
   final ValueChanged<String>? onComplete;
+  final VoidCallback? onBiometric;
 
   const PinPad({
     super.key,
@@ -13,6 +14,7 @@ class PinPad extends StatelessWidget {
     required this.onChanged,
     this.length = 6,
     this.onComplete,
+    this.onBiometric,
   });
 
   void _press(String key) {
@@ -67,7 +69,7 @@ class PinPad extends StatelessWidget {
           children: keys.map((k) {
             if (k == 'bio') {
               return _KeyButton(
-                onTap: () => onComplete?.call(value),
+                onTap: () => onBiometric?.call(),
                 child: const Icon(Icons.fingerprint_rounded, size: 28, color: AppColors.primary),
               );
             }

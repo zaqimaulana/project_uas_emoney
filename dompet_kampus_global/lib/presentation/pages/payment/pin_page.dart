@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/biometric_service.dart';
 import '../../../core/services/deeplink_callback_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -30,6 +31,7 @@ class _PinPageState extends State<PinPage> {
   String _otpCode = '';
   bool _busy = false;
   bool _otpError = false;
+  bool _pinError = false;
 
   // 2FA method aktif ('smtp' | 'totp' | 'notif'), default ke TOTP.
   String _twoFaMethod = AppConstants.twoFaTotp;
@@ -37,16 +39,79 @@ class _PinPageState extends State<PinPage> {
   int _resendTimer = AppConstants.otpResendSeconds;
   Timer? _countdown;
 
+  final BiometricService _bio = BiometricService();
+
+  @override
+  void initState() {
+    super.initState();
+    _tryAutoBiometric();
+  }
+
+  Future<void> _tryAutoBiometric() async {
+    final enabled = await _bio.isEnabled();
+    final available = await _bio.isAvailable();
+    if (enabled && available && mounted) {
+      await _onBiometric();
+    }
+  }
+
   @override
   void dispose() {
     _countdown?.cancel();
     super.dispose();
   }
 
-  // Step 1: PIN selesai diketik → tentukan apakah perlu OTP/2FA atau langsung diproses.
-  void _onPinComplete(String pin) {
+  // Autentikasi biometrik — jika berhasil, lewati PIN dan lanjut ke OTP/proses.
+  Future<void> _onBiometric() async {
+    final ok = await _bio.authenticate(reason: 'Konfirmasi pembayaran dengan biometrik');
+    if (!mounted) return;
+    if (ok) {
+      _proceedAfterPin();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Autentikasi biometrik gagal, masukkan PIN.'),
+        backgroundColor: AppColors.red,
+      ));
+    }
+  }
+
+  // Step 1: PIN selesai diketik → validasi dulu baru lanjut.
+  Future<void> _onPinComplete(String pin) async {
+    final storage = sl<SecureStorageDatasource>();
+    final stored = await storage.getPin();
+
+    if (stored == null) {
+      // PIN belum diatur → arahkan user ke Account > Ubah PIN.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('PIN belum diatur. Atur PIN di menu Akun terlebih dahulu.'),
+        backgroundColor: AppColors.red,
+      ));
+      setState(() => _pin = '');
+      return;
+    }
+
+    if (stored != pin) {
+      // PIN salah.
+      if (!mounted) return;
+      setState(() {
+        _pinError = true;
+        _pin = '';
+      });
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) setState(() => _pinError = false);
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    _proceedAfterPin();
+  }
+
+  // Lanjut setelah PIN/biometrik berhasil.
+  void _proceedAfterPin() {
     setState(() {
-      _pin = pin;
+      _pin = '';
       _busy = true;
     });
 
@@ -330,11 +395,22 @@ class _PinPageState extends State<PinPage> {
           const Text('Masukkan 6 digit PIN keamanan kamu',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13.5, color: AppColors.slate500)),
+          if (_pinError) ...[
+            const SizedBox(height: 16),
+            const Text('PIN salah, coba lagi',
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  color: AppColors.red,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                )),
+          ],
           const Spacer(),
           PinPad(
             value: _pin,
             onChanged: (v) => setState(() => _pin = v),
-            onComplete: _onPinComplete,
+            onComplete: (pin) => _onPinComplete(pin),
+            onBiometric: _onBiometric,
           ),
           const SizedBox(height: 18),
           const Text.rich(TextSpan(
