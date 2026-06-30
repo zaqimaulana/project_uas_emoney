@@ -3,10 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/biometric_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../data/datasources/local/secure_storage_datasource.dart';
+import '../../../injection/injection_container.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../widgets/app_avatar.dart';
 import '../../widgets/app_badge.dart';
 import '../../widgets/feature_icon.dart';
+import '../../widgets/pin_pad.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -124,8 +127,13 @@ class AccountPage extends StatelessWidget {
                               icon: Icons.lock_outline_rounded,
                               tone: 'blue',
                               title: 'Ubah PIN keamanan',
-                              subtitle: 'Terakhir diubah 2 bln lalu',
-                              onTap: () {},
+                              subtitle: 'Atur atau ubah PIN transaksi',
+                              onTap: () => showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => const _ChangePinSheet(),
+                              ),
                             ),
                             const Divider(height: 1, indent: 56, color: AppColors.line2),
                             _Row(
@@ -349,6 +357,170 @@ class _ToggleState extends State<_Toggle> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────
+// Bottom sheet: Atur / Ubah PIN keamanan
+// ────────────────────────────────────────────────
+
+enum _PinStep { oldPin, newPin, confirmPin }
+
+class _ChangePinSheet extends StatefulWidget {
+  const _ChangePinSheet();
+
+  @override
+  State<_ChangePinSheet> createState() => _ChangePinSheetState();
+}
+
+class _ChangePinSheetState extends State<_ChangePinSheet> {
+  _PinStep _step = _PinStep.oldPin;
+  String _pin = '';
+  String _newPin = '';
+  bool _hasExistingPin = false;
+  bool _pinError = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingPin();
+  }
+
+  Future<void> _checkExistingPin() async {
+    final stored = await sl<SecureStorageDatasource>().getPin();
+    if (!mounted) return;
+    setState(() {
+      _hasExistingPin = stored != null;
+      // Jika belum ada PIN, langsung ke step buat PIN baru
+      _step = stored != null ? _PinStep.oldPin : _PinStep.newPin;
+      _loading = false;
+    });
+  }
+
+  String get _title {
+    switch (_step) {
+      case _PinStep.oldPin:
+        return 'Masukkan PIN Lama';
+      case _PinStep.newPin:
+        return _hasExistingPin ? 'Masukkan PIN Baru' : 'Buat PIN Baru';
+      case _PinStep.confirmPin:
+        return 'Konfirmasi PIN Baru';
+    }
+  }
+
+  String get _subtitle {
+    switch (_step) {
+      case _PinStep.oldPin:
+        return 'Masukkan PIN lama kamu untuk melanjutkan';
+      case _PinStep.newPin:
+        return 'Masukkan 6 digit PIN baru';
+      case _PinStep.confirmPin:
+        return 'Masukkan ulang PIN baru untuk konfirmasi';
+    }
+  }
+
+  Future<void> _onComplete(String pin) async {
+    final storage = sl<SecureStorageDatasource>();
+
+    if (_step == _PinStep.oldPin) {
+      final stored = await storage.getPin();
+      if (stored != pin) {
+        if (!mounted) return;
+        setState(() { _pinError = true; _pin = ''; });
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) setState(() => _pinError = false);
+        });
+        return;
+      }
+      if (!mounted) return;
+      setState(() { _step = _PinStep.newPin; _pin = ''; });
+      return;
+    }
+
+    if (_step == _PinStep.newPin) {
+      if (!mounted) return;
+      setState(() { _newPin = pin; _step = _PinStep.confirmPin; _pin = ''; });
+      return;
+    }
+
+    // confirmPin
+    if (pin != _newPin) {
+      if (!mounted) return;
+      setState(() { _pinError = true; _pin = ''; });
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) setState(() => _pinError = false);
+      });
+      return;
+    }
+
+    await storage.savePin(_newPin);
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('PIN berhasil disimpan'),
+      backgroundColor: AppColors.green,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottom),
+      child: _loading
+          ? const Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.line,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(_title,
+                    style: const TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    )),
+                const SizedBox(height: 6),
+                Text(_subtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13.5, color: AppColors.slate500)),
+                if (_pinError) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _step == _PinStep.oldPin ? 'PIN lama salah, coba lagi' : 'PIN tidak cocok, coba lagi',
+                    style: const TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      color: AppColors.red,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                PinPad(
+                  value: _pin,
+                  onChanged: (v) => setState(() => _pin = v),
+                  onComplete: (pin) => _onComplete(pin),
+                ),
+              ],
+            ),
     );
   }
 }
