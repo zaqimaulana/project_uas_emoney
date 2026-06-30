@@ -33,6 +33,9 @@ class _PinPageState extends State<PinPage> {
   bool _otpError = false;
   bool _pinError = false;
 
+  // null = belum dicek, false = belum diatur, true = sudah diatur
+  bool? _pinExists;
+
   // 2FA method aktif ('smtp' | 'totp' | 'notif'), default ke TOTP.
   String _twoFaMethod = AppConstants.twoFaTotp;
 
@@ -44,10 +47,16 @@ class _PinPageState extends State<PinPage> {
   @override
   void initState() {
     super.initState();
-    _tryAutoBiometric();
+    _checkPinThenBiometric();
   }
 
-  Future<void> _tryAutoBiometric() async {
+  Future<void> _checkPinThenBiometric() async {
+    final stored = await sl<SecureStorageDatasource>().getPin();
+    if (!mounted) return;
+    setState(() => _pinExists = stored != null);
+
+    if (stored == null) return; // PIN belum diatur, jangan trigger biometrik
+
     final enabled = await _bio.isEnabled();
     final available = await _bio.isAvailable();
     if (enabled && available && mounted) {
@@ -340,7 +349,17 @@ class _PinPageState extends State<PinPage> {
                   },
                 ),
               ),
-              if (_busy) ...[
+              if (_pinExists == null) ...[
+                // Masih mengecek apakah PIN sudah diatur
+                const Expanded(
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                ),
+              ] else if (_pinExists == false) ...[
+                // PIN belum diatur — tampilkan UI jelas, bukan snackbar
+                Expanded(child: _buildNoPinState()),
+              ] else if (_busy) ...[
                 const Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -365,6 +384,69 @@ class _PinPageState extends State<PinPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNoPinState() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 20, 32, 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.primarySurface,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(Icons.lock_outline_rounded, size: 36, color: AppColors.primary),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'PIN Belum Diatur',
+            style: TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Kamu belum mengatur PIN transaksi.\nAtur PIN terlebih dahulu melalui halaman Akun.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 14,
+              color: AppColors.slate500,
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => context.go('/akun'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Atur PIN Sekarang',
+                style: TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
