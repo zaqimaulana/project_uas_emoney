@@ -26,6 +26,7 @@ class AppConstants {
 
   // PIN
   static const int pinLength = 6;
+  static const String kPin = 'user_pin';
 
   // Transaction kinds
   static const String txnTransfer = 'transfer';
