@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -23,6 +24,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _hideBalance = false;
+  bool _hasUnread = true;
   StreamSubscription<RemoteMessage>? _fcmSub;
 
   @override
@@ -51,6 +53,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _onFcmMessage(RemoteMessage message) {
     context.read<AccountBloc>().add(AccountRefreshRequested());
+    if (mounted) setState(() => _hasUnread = true);
     final notif = message.notification;
     if (notif != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -59,6 +62,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         behavior: SnackBarBehavior.floating,
       ));
     }
+  }
+
+  void _openNotifications(List<TransactionEntity> txns) {
+    setState(() => _hasUnread = false);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _NotificationSheet(txns: txns),
+    );
   }
 
   Future<void> _registerFcmToken() async {
@@ -135,32 +148,36 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 ],
                               ),
                             ),
-                            Stack(
-                              children: [
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.18),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: const Icon(Icons.notifications_outlined,
-                                      size: 21, color: Colors.white),
-                                ),
-                                Positioned(
-                                  top: 10,
-                                  right: 11,
-                                  child: Container(
-                                    width: 8,
-                                    height: 8,
+                            GestureDetector(
+                              onTap: () => _openNotifications(txns),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
                                     decoration: BoxDecoration(
-                                      color: AppColors.amber,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 2),
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(14),
                                     ),
+                                    child: const Icon(Icons.notifications_outlined,
+                                        size: 21, color: Colors.white),
                                   ),
-                                ),
-                              ],
+                                  if (_hasUnread)
+                                    Positioned(
+                                      top: 10,
+                                      right: 11,
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.amber,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 2),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -572,6 +589,227 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _NotificationSheet extends StatefulWidget {
+  final List<TransactionEntity> txns;
+  const _NotificationSheet({required this.txns});
+
+  @override
+  State<_NotificationSheet> createState() => _NotificationSheetState();
+}
+
+class _NotificationSheetState extends State<_NotificationSheet> {
+  static const _prefKey = 'dismissed_notif_ids';
+
+  Set<int> _dismissed = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDismissed();
+  }
+
+  Future<void> _loadDismissed() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_prefKey) ?? [];
+    if (mounted) setState(() => _dismissed = ids.map(int.parse).toSet());
+  }
+
+  Future<void> _dismiss(int id) async {
+    setState(() => _dismissed.add(id));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefKey, _dismissed.map((e) => e.toString()).toList());
+  }
+
+  Future<void> _clearAll(List<TransactionEntity> visible) async {
+    final ids = visible.map((t) => t.id).toSet();
+    setState(() => _dismissed.addAll(ids));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefKey, _dismissed.map((e) => e.toString()).toList());
+  }
+
+  Future<void> _restoreAll() async {
+    setState(() => _dismissed.clear());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefKey);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = widget.txns.where((t) => !_dismissed.contains(t.id)).toList();
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text('Notifikasi',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      )),
+                ),
+                if (_dismissed.isNotEmpty && visible.isEmpty)
+                  TextButton(
+                    onPressed: _restoreAll,
+                    child: const Text('Pulihkan semua',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 13,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        )),
+                  )
+                else if (visible.isNotEmpty)
+                  TextButton(
+                    onPressed: () => _clearAll(visible),
+                    child: const Text('Hapus semua',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 13,
+                          color: AppColors.red,
+                          fontWeight: FontWeight.w700,
+                        )),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: AppColors.line2),
+          Flexible(
+            child: visible.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _dismissed.isEmpty
+                                ? 'Belum ada notifikasi'
+                                : 'Semua notifikasi dihapus',
+                            style: const TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              color: AppColors.slate400,
+                            ),
+                          ),
+                          if (_dismissed.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            TextButton.icon(
+                              onPressed: _restoreAll,
+                              icon: const Icon(Icons.restore_rounded,
+                                  size: 16, color: AppColors.primary),
+                              label: const Text('Pulihkan semua notifikasi',
+                                  style: TextStyle(
+                                    fontFamily: 'PlusJakartaSans',
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13.5,
+                                  )),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: visible.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, indent: 68, color: AppColors.line2),
+                    itemBuilder: (_, i) {
+                      final t = visible[i];
+                      final isCredit = t.isCredit;
+                      return Dismissible(
+                        key: ValueKey(t.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          color: AppColors.redSurface,
+                          child: const Icon(Icons.delete_outline_rounded,
+                              color: AppColors.red, size: 22),
+                        ),
+                        onDismissed: (_) => _dismiss(t.id),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: isCredit ? AppColors.greenSurface : AppColors.primarySurface,
+                                  borderRadius: BorderRadius.circular(13),
+                                ),
+                                child: Icon(
+                                  isCredit ? Icons.south_rounded : Icons.north_rounded,
+                                  size: 20,
+                                  color: isCredit ? AppColors.green : AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      isCredit ? 'Saldo Masuk' : 'Saldo Keluar',
+                                      style: const TextStyle(
+                                        fontFamily: 'PlusJakartaSans',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(t.description,
+                                        style: const TextStyle(
+                                          fontFamily: 'PlusJakartaSans',
+                                          fontSize: 12.5,
+                                          color: AppColors.slate400,
+                                        )),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '${isCredit ? '+' : '-'} ${CurrencyFormatter.format(t.amount)}',
+                                style: TextStyle(
+                                  fontFamily: 'PlusJakartaSans',
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: isCredit ? AppColors.green : AppColors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
+        ],
+      ),
     );
   }
 }
