@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // ── daqi brand palette ──────────────────────────────────────────────────
-  // Gradient: midnight navy → royal blue → vivid cyan (sesuai logo daqi)
-  static const Color primaryDark   = Color(0xFF050E1F); // midnight navy
-  static const Color primary       = Color(0xFF1648C8); // royal electric blue
-  static const Color primaryLight  = Color(0xFF3A80EE); // sky blue
-  static const Color primarySurface= Color(0xFFEBF3FF); // ice blue
-  static const Color primaryBorder = Color(0xFFBDD6FC); // soft blue border
+  // Gradient: midnight navy → brand blue → brand green-turquoise (sesuai logo daqi)
+  static const Color primaryDark   = Color(0xFF012B58); // midnight navy / dark blue
+  static const Color primary       = Color(0xFF0267CB); // brand blue
+  static const Color primaryLight  = Color(0xFF3395FF); // vibrant light blue
+  static const Color primarySurface= Color(0xFFE6F0FA); // ice blue surface
+  static const Color primaryBorder = Color(0xFFB0D0F5); // soft blue border
 
-  // Cyan accent — warna "i" di logo daqi
-  static const Color cyan          = Color(0xFF00BFD8);
-  static const Color cyanLight     = Color(0xFF26D5E8);
-  static const Color cyanSurface   = Color(0xFFE0FAFB);
+  // Cyan/Green accent — warna hijau toska di logo daqi
+  static const Color cyan          = Color(0xFF00CEC6); // brand green-turquoise
+  static const Color cyanLight     = Color(0xFF33DFD9); // light green-turquoise
+  static const Color cyanSurface   = Color(0xFFE6FDFC); // soft mint surface
 
   // ── Semantic ─────────────────────────────────────────────────────────────
-  static const Color green         = Color(0xFF16A571);
-  static const Color greenSurface  = Color(0xFFE8F8F2);
+  static const Color green         = Color(0xFF00B050); // emerald green
+  static const Color greenSurface  = Color(0xFFE5F7ED); // soft green surface
   static const Color amber         = Color(0xFFD98512);
   static const Color amberSurface  = Color(0xFFFDF3E3);
   static const Color red           = Color(0xFFE5484D);
@@ -32,7 +32,7 @@ class AppColors {
   static const Color slate300= Color(0xFFC5D2E0);
   static const Color line    = Color(0xFFDEE8F5);
   static const Color line2   = Color(0xFFEFF4FB);
-  static const Color bg      = Color(0xFFF0F5FF); // ice-blue background
+  static const Color bg      = Color(0xFFF3F7FC); // clean light blue-grey background
   static const Color white   = Color(0xFFFFFFFF);
 
   // ── Gradient — midnight navy → royal blue → vivid cyan ───────────────────

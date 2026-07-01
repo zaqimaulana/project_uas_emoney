@@ -224,10 +224,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildBalanceCard(double balance, bool loading) {
     final actions = [
-      {'icon': Icons.north_rounded, 'label': 'Top Up', 'tone': 'blue', 'route': '/topup'},
-      {'icon': Icons.send_rounded, 'label': 'Transfer', 'tone': 'green', 'route': '/transfer'},
-      {'icon': Icons.qr_code_rounded, 'label': 'Bayar', 'tone': 'violet', 'route': '/payment'},
-      {'icon': Icons.south_rounded, 'label': 'Tarik', 'tone': 'amber', 'route': '/topup'},
+      {'icon': DkgIcons.topup, 'label': 'Top Up', 'tone': 'blue', 'route': '/topup'},
+      {'icon': DkgIcons.send, 'label': 'Transfer', 'tone': 'green', 'route': '/transfer'},
+      {'icon': DkgIcons.qris, 'label': 'Bayar', 'tone': 'cyan', 'route': '/payment'},
+      {'icon': DkgIcons.withdraw, 'label': 'Tarik', 'tone': 'amber', 'route': '/topup'},
     ];
 
     return Container(
@@ -422,14 +422,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Widget _buildFeatureGrid() {
     final features = [
-      {'icon': Icons.smartphone_outlined, 'label': 'Pulsa', 'tone': 'blue'},
-      {'icon': Icons.bolt_outlined, 'label': 'PLN', 'tone': 'amber'},
-      {'icon': Icons.restaurant_outlined, 'label': 'Kantin', 'tone': 'red'},
-      {'icon': Icons.receipt_long_outlined, 'label': 'UKT', 'tone': 'violet'},
-      {'icon': Icons.wifi_rounded, 'label': 'Paket Data', 'tone': 'green'},
-      {'icon': Icons.card_giftcard_rounded, 'label': 'Voucher', 'tone': 'red'},
-      {'icon': Icons.favorite_outline_rounded, 'label': 'Donasi', 'tone': 'amber'},
-      {'icon': Icons.more_horiz_rounded, 'label': 'Lainnya', 'tone': 'slate'},
+      {'icon': DkgIcons.pulsa, 'label': 'Pulsa', 'tone': 'blue'},
+      {'icon': DkgIcons.pln, 'label': 'PLN', 'tone': 'amber'},
+      {'icon': DkgIcons.kantin, 'label': 'Kantin', 'tone': 'red'},
+      {'icon': DkgIcons.ukt, 'label': 'UKT', 'tone': 'violet'},
+      {'icon': DkgIcons.paketData, 'label': 'Paket Data', 'tone': 'green'},
+      {'icon': DkgIcons.voucher, 'label': 'Voucher', 'tone': 'red'},
+      {'icon': DkgIcons.donasi, 'label': 'Donasi', 'tone': 'amber'},
+      {'icon': DkgIcons.more, 'label': 'Lainnya', 'tone': 'slate'},
     ];
     return Container(
       decoration: BoxDecoration(
